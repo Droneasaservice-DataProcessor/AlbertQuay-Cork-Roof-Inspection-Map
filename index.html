@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Albert Quay Roof Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:"Segoe UI",Arial,sans-serif;color:#1d1d1b}
+header{height:56px;display:flex;align-items:center;gap:14px;padding:0 14px;background:#1F3864;color:#fff}
+header h1{font-size:15px;margin:0;font-weight:600}
+header .sub{font-size:12px;opacity:.85}
+.modes{margin-left:auto;display:flex;gap:6px}
+.modes button{border:1px solid #fff;background:transparent;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+.modes button.on{background:#fff;color:#1F3864;font-weight:600}
+#side{position:absolute;top:56px;bottom:0;left:0;width:360px;background:#fafaf8;border-right:1px solid #ddd;overflow-y:auto;z-index:800}
+#map{position:absolute;top:56px;bottom:0;left:360px;right:0;background:#fff}
+#side h2{font-size:14px;margin:14px 16px 6px;color:#1F3864}
+#side .intro{font-size:12px;color:#555;margin:0 16px 10px;line-height:1.45}
+.item{display:flex;gap:10px;padding:10px 16px;border-top:1px solid #eee;cursor:pointer;align-items:flex-start}
+.item:hover{background:#eef2f8}
+.num{flex:0 0 26px;height:26px;border-radius:50%;background:#c00000;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.num.off{background:#8c8c8c}
+.item b{font-size:13px;display:block}
+.item span{font-size:12px;color:#555}
+.status{display:inline-block;margin-top:4px;font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid}
+.s-ok{color:#0f6e56;border-color:#0f6e56;background:#e1f5ee}.s-warn{color:#854f0b;border-color:#ba7517;background:#faeeda}
+.s-bad{color:#a32d2d;border-color:#a32d2d;background:#fcebeb}.s-na{color:#5f5e5a;border-color:#888780;background:#f1efe8}
+#detail{display:none;padding:12px 16px 24px}
+#detail .back{font-size:13px;color:#1F3864;cursor:pointer;margin-bottom:8px;display:inline-block}
+#detail h3{margin:4px 0 2px;font-size:16px;color:#1F3864}
+#detail .loc{font-size:12px;color:#666;margin-bottom:8px}
+.pics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.pics figure{margin:0}
+.pics img{width:100%;border-radius:4px;cursor:zoom-in;display:block}
+.pics figcaption{font-size:11px;color:#666;margin-top:2px}
+.pics .wide{grid-column:1/3}
+#detail ul{padding-left:18px;margin:6px 0;font-size:13px;line-height:1.45}
+#detail .mean{font-size:13px;line-height:1.45;background:#eef2f8;border-left:3px solid #1F3864;padding:8px 10px;margin-top:8px}
+#swipe{position:absolute;top:0;bottom:0;width:4px;background:#fff;box-shadow:0 0 4px rgba(0,0,0,.6);z-index:650;cursor:ew-resize;display:none}
+#swipe span{position:absolute;top:50%;left:-14px;width:32px;height:32px;margin-top:-16px;border-radius:50%;background:#fff;box-shadow:0 0 4px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:14px;color:#1F3864;user-select:none}
+.panel{position:absolute;z-index:700;background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.25);font-size:12px;padding:9px 11px}
+#legend{left:12px;bottom:14px;width:240px}
+#legend .bar{height:11px;border-radius:3px;background:linear-gradient(to right,#000004,#420a68,#932667,#dd513a,#fca50a,#fcffa4);margin:5px 0 2px}
+#legend .ends{display:flex;justify-content:space-between}
+#legend .info{margin-top:5px;color:#555}
+#legend .more{color:#1F3864;cursor:pointer;text-decoration:underline}
+#about{display:none;margin-top:6px;line-height:1.4;color:#333}
+#north{right:12px;top:12px;text-align:center;font-weight:700;color:#1F3864;padding:6px 9px;line-height:1.1}
+#scale{right:12px;bottom:14px;padding:6px 10px}
+#scale .sb{height:6px;border:2px solid #1d1d1b;border-top:none;margin-top:3px}
+.tag{background:#fff;border:2px solid #c00000;color:#c00000;font-weight:700;padding:1px 6px;border-radius:4px;white-space:nowrap;font-size:12px}
+.leaflet-tooltip.lbl{background:transparent;border:none;box-shadow:none;padding:0}
+.leaflet-tooltip.lbl:before{display:none}
+.tp{font-size:13px;line-height:1.4}.tp b{font-size:16px}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;cursor:zoom-out}
+#lightbox img{max-width:92vw;max-height:84vh;border-radius:4px}
+#lightbox div{color:#fff;font-size:13px;margin-top:8px}
+@media (max-width:760px){
+ header{height:auto;flex-wrap:wrap;padding:8px}header .sub{display:none}
+ #side{top:auto;bottom:0;width:100%;height:42%;border-right:none;border-top:1px solid #ddd}
+ #map{left:0;top:84px;bottom:42%}
+ #legend{width:200px}#scale{display:none}
+}
+
+.stag{background:#fff;border:2px solid #c00000;color:#c00000;font-weight:700;padding:1px 5px;border-radius:4px;white-space:nowrap;font-size:12px}
+.stag.low{border-color:#5f5e5a;color:#5f5e5a}.stag.med{border-color:#ba7517;color:#854f0b}
+table.st{border-collapse:collapse;width:100%;font-size:12px;margin:8px 0}
+table.st td,table.st th{border-bottom:1px solid #e3e3e3;padding:5px 4px;text-align:left;vertical-align:top}
+table.st th{color:#1F3864;font-weight:600}
+table.st tr.click{cursor:pointer}table.st tr.click:hover{background:#eef2f8}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>One Albert Quay, Cork – Roof Inspection</h1><div class="sub">Drone survey 2 November 2026 · Savills Ireland · DroneAsAService</div></div>
+  <div class="modes"><button data-m="rgb">Visual</button><button data-m="thermal">Thermal</button><button data-m="swipe" class="on">Swipe</button></div>
+</header>
+<aside id="side">
+  <div id="list">
+    <h2>Suspected moisture locations</h2>
+    <p class="intro">Locations S1–S6 are marked on the map. Select one to see its photos and what it means.</p>
+    <table class="st" id="stab"><tr><th>Ref.</th><th>Location</th><th>Colder than gravel around it</th><th>Confidence</th></tr></table>
+    <h2>Findings</h2>
+    <p class="intro">Red numbers are marked on the map; grey numbers relate to several locations across the roof.</p>
+    <div id="items"></div>
+  </div>
+  <div id="detail"></div>
+</aside>
+<div id="map">
+  <div id="swipe"><span>&#8596;</span></div>
+  <div id="legend" class="panel"><b>Surface temperature</b><div class="bar"></div><div class="ends"><span>5 °C cold</span><span>25 °C warm</span></div>
+    <div class="info">Click the roof to read the temperature. <span class="more" id="moreBtn">About the readings</span></div>
+    <div id="about">Apparent surface temperatures at emissivity 0.95, captured 14:20–14:38 in cloudy conditions with a low November sun. The camera sees the surface of the gravel, not the membrane beneath: wet areas read as cold patches in otherwise even gravel. Shaded areas beside upstands and plant also read cold. Not reliable on metal or glass (flashings, ducts, rooflights, glazing). Accuracy approx. ±2 °C, so best used to compare nearby spots. The south-east part of the roof comes from a second processing of the same flight images and agrees with the rest of the map to within about 0.3 °C. The dark angular shapes in that area are shadows from the neighbouring structures, not moisture.</div></div>
+  <div id="north" class="panel">N<br>&#8593;</div>
+  <div id="scale" class="panel"><span id="sl">5 m</span><div class="sb" id="sbar"></div></div>
+</div>
+<div id="lightbox"><img alt=""><div></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="temps.js"></script>
+<script>
+var W=4272,H=3006,PX=0.01;
+var ST={leak:['s-bad','Known leak'],high:['s-bad','Medium-high'],med:['s-warn','Medium'],low:['s-na','Low'],info:['s-na','Condition item'],ok:['s-ok','No leak pattern seen']};
+var T='Thermal',V='Visual';
+var SPOTS=[
+ {r:'S1',loc:'Known leak, north-east part of main roof',d:'Close-up 6.7 °C; map 5 °C',c:'leak',cl:'Confirmed – known leak',f:1,xy:[3481, 324]},
+ {r:'S6',loc:'Foot of the parapet step, beside the condenser units',d:'Close-up 3.7 °C; map 5 °C',c:'high',cl:'Medium-high – part may be shade',f:2,xy:[3115, 365]},
+ {r:'S5',loc:'Junction of the upstand and the cable run',d:'Map 5 °C',c:'med',cl:'Medium – thermal map only',f:2,xy:[3954, 1087]},
+ {r:'S4',loc:'West side of the enclosed rooflight',d:'Map 4 °C',c:'med',cl:'Medium – partly shaded',f:2,xy:[3889, 747]},
+ {r:'S2',loc:'North end of the condenser units',d:'Map 4 °C; not seen on close-up',c:'low',cl:'Low',f:2,xy:[3583, 557]},
+ {r:'S3',loc:'South end of the condenser units',d:'Map 5 °C; not seen on close-up',c:'low',cl:'Low',f:2,xy:[3700, 890]}
+];
+var FIND=[
+ {n:1,t:'Known leak location (reference, S1)',s:'Cold streak about 6.7 °C below gravel; torn membrane, standing water',st:'leak',xy:null,spot:'S1',
+  imgs:[['f1_t0001.jpg',T+' – known leak area (frame 0001)'],['f1_v0001.jpg',V+' – known leak area (frame 0001)'],['f1_map_s1.jpg',T+' map – location S1','wide']],
+  b:['On the close-up thermal image, a narrow cold streak runs through the gravel beside the cable. It reads approximately 7.3 °C, compared with approximately 14.0 °C for dry gravel nearby – about 6.7 °C colder.','The thermal map shows the same area about 5 °C colder than the gravel around it.','The photo of this area shows the exposed membrane channel holding standing water with red-brown staining, a torn membrane flap beside the vent box, and black lifted or split membrane edges showing through the gravel.','The cold patch does not match the direction of the shadows at the time of the survey, so it is not explained by shade.'],
+  m:'This is the reference pattern for a leak on this roof: a cold streak or patch in the gravel where water is being held above or within the membrane. The rest of the roof was checked for the same pattern.'},
+ {n:2,t:'Suspected moisture locations S2–S6',s:'S6 supported by close-up; S4, S5 on thermal map only; S2, S3 low confidence',st:'high',xy:null,spot:'S6',
+  imgs:[['f2_t0407.jpg',T+' – foot of parapet step, S6 (frame 0407)'],['f2_v0407.jpg',V+' – parapet step and condenser units (frame 0407)'],['f2_t0182.jpg',T+' – condenser units, S2/S3 (frame 0182)'],['f2_v0182.jpg',V+' – condenser units and cable run (frame 0182)']],
+  b:['S6 shows a cold zone along the foot of the parapet step on the close-up, about 8.7 °C against about 12.4 °C for gravel nearby. Part of this zone may be shade from the parapet, but it matches the pattern on the thermal map.','S2 and S3 show as cold patches on the thermal map, but the close-up of the condenser area shows no distinct cold patch at these spots, so they are given low confidence.','The condenser units sit directly on this junction. In heating mode these units discharge cold air and drain condensate and defrost water onto the roof, which can keep the gravel wet and add to the cold reading at S2 and S3.','Loose geotextile/fabric lies beside the condensers, and the cable bundles lie directly on the gravel without supports.','S4 and S5 show the same pattern on the thermal map only; S4 is partly in shade.'],
+  m:'After the known leak (S1), the foot of the parapet step at S6 is the most likely additional point of water ingress, followed by S5 and S4. S2 and S3 are lower priority but lie on the same junction and can be checked during the same works.'},
+ {n:3,t:'Exposed membrane channels and outlets',s:'Standing water, staining, gravel and moss in channels, torn edges',st:'info',xy:null,loc:'Channels and outlets across the roof',
+  imgs:[['f3_t0088.jpg',T+' – channel and outlet (frame 0088)'],['f3_v0088.jpg',V+' – channel and outlet (frame 0088)'],['f3_v_outlet_duct.jpg',V+' – outlet beside the duct'],['f3_v_channel_vents.jpg',V+' – channel, outlet and vent boxes'],['f3_v_channel1.jpg',V+' – channel and outlet'],['f3_v_channel2.jpg',V+' – channel and outlet']],
+  b:['The exposed membrane channels hold standing water, with red-brown staining showing that water sits there for long periods.','Loose gravel has washed into the channels, and moss and vegetation are growing along both edges and around the outlets.','The membrane edges beside the channels are torn and lifted in several places, with loose flaps at the vent boxes.','The outlets are partly covered by gravel and moss.','On the thermal image the sunlit membrane in the channel reads warm, with a cold line along the channel edge where water sits.'],
+  m:'Water is not draining fully along the channels. Standing water at torn and lifted membrane edges is a direct route for water to get under the waterproofing, which matches the known leak.'},
+ {n:4,t:'Lifted or split membrane edges through the gravel',s:'Lifted or split laps showing through the gravel',st:'info',xy:null,loc:'Near the channels, the duct and the vent boxes',
+  imgs:[['f4_v_edges_duct.jpg',V+' – black membrane edges beside the duct'],['f4_v_edges_channel.jpg',V+' – black membrane edges near the channel']],
+  b:['Black lines show through the gravel in several areas, especially near the channels, the duct and the vent boxes. These are lifted, curled or split membrane edges (laps) that have pushed up through the gravel.','Where the gravel has been displaced, the membrane underneath is exposed to sunlight.'],
+  m:'Lifted laps are weak points where water can get under the membrane. They cannot be fully assessed without removing the gravel locally.'},
+ {n:5,t:'Rooflight enclosure and upstands',s:'Loose, peeling upstand membrane; moss inside enclosure',st:'info',xy:null,loc:'Enclosed rooflight, east of the condenser units',
+  imgs:[['f5_t0344.jpg',T+' – rooflight enclosure and plant (frame 0344)'],['f5_v0344.jpg',V+' – rooflight enclosure and plant (frame 0344)']],
+  b:['The black membrane upstand around the enclosed rooflight is loose, peeling away from its backing and curling over the gravel at its corners.','Moss is growing along the inside of the enclosure upstand.','Suspected moisture location S4 is on the west side of this enclosure.'],
+  m:'A loose upstand membrane no longer seals the junction between the roof and the enclosure, so water can run behind it. This upstand should be re-dressed and sealed.'},
+ {n:6,t:'Plant, duct, roof hatch and metal-clad plant roof',s:'Lichen and torn felt on hatch; vegetation at duct base',st:'info',xy:null,loc:'Plant area east of the main roof',
+  imgs:[['f6_t0259.jpg',T+' – duct and enclosure (frame 0259)'],['f6_v0259.jpg',V+' – duct and enclosure (frame 0259)'],['f6_v_duct_hatch.jpg',V+' – duct, roof hatch and outlet'],['f6_v_duct_hatch2.jpg',V+' – duct and roof hatch'],['f6_v_metal_roof.jpg',V+' – metal-clad plant roof and glazed roof','wide']],
+  b:['The felt covering on the roof hatch carries heavy lichen, and the felt is torn and lifted at one corner.','Moss and vegetation are growing around the base of the large duct and its supports.','The metal-clad plant roof shows surface staining and minor marks; its seams appear in place from above. Metal cannot be assessed reliably with thermal imaging.'],
+  m:'The torn felt at the hatch and vegetation around the duct base can hold water against the junctions. These should be checked close up.'},
+ {n:7,t:'Main gravel roof: vents, rooflights and cable run',s:'No leak-type pattern; dark staining around vents',st:'ok',xy:[1800,1650],
+  imgs:[['f7_map.jpg',T+' map – main roof','wide'],['f7_v_vents.jpg',V+' – vent units and dark staining'],['f7_v_rooflight.jpg',V+' – rooflight and vent units'],['f7_v_cable.jpg',V+' – cable run, vents and rooflight'],['f7_v_vents2.jpg',V+' – vents and dark staining']],
+  b:['Across the main roof the gravel reads evenly, with no cold streak or patch of the type seen at the known leak.','Dark staining is visible in the gravel around several vent units and rooflights. This staining shows where water sits after rain.','The cable bundles reading cold on the thermal map are the cables themselves, not a defect. The dark circle is a rainwater outlet cover.','Moss and small plants are growing across this roof.'],
+  m:'No leak-type pattern was found on the main roof. The dark staining around the vent units should be checked when the gravel is lifted for maintenance.'},
+ {n:8,t:'Parapets, copings and roof edges',s:'Vegetation at parapet base; loose slabs',st:'info',xy:[1950,960],
+  imgs:[['f8_t0012.jpg',T+' – north parapet (frame 0012)'],['f8_v0012.jpg',V+' – north parapet (frame 0012)'],['f8_v_corner.jpg',V+' – parapet corner and roof edge','wide']],
+  b:['Moss and vegetation are growing along the base of the parapets, where the gravel meets the upstand.','The coping stones appear in place from above, with some lichen and staining at the joints.','Loose paving slabs are lying on the gravel near the north parapet.','On the thermal image the gravel along the north parapet reads evenly, with no cold streak of the type seen at S1.'],
+  m:'Vegetation at the parapet base holds water against the upstand and can block drainage. It should be removed and the upstands checked close up.'}
+];
+var map=L.map('map',{crs:L.CRS.Simple,minZoom:-4,maxZoom:2,zoomSnap:0.25,attributionControl:false,zoomControl:true});
+var bounds=[[0,0],[H,W]];
+map.createPane('thermalPane');map.getPane('thermalPane').style.zIndex=410;
+L.imageOverlay('rgb.jpg',bounds).addTo(map);
+L.imageOverlay('thermal.jpg',bounds,{pane:'thermalPane'}).addTo(map);
+map.fitBounds(bounds);map.setMaxBounds([[-H*0.3,-W*0.3],[H*1.3,W*1.3]]);
+function ll(x,y){return[H-y,x];}
+var CLS={leak:'',high:'',med:' med',low:' low'};
+SPOTS.forEach(function(s){
+  var col=s.c==='low'?'#5f5e5a':(s.c==='med'?'#ba7517':'#c00000');
+  var m=L.circleMarker(ll(s.xy[0],s.xy[1]),{radius:11,color:col,weight:3,fillColor:'#fff',fillOpacity:.15}).addTo(map)
+   .bindTooltip('<span class="stag'+CLS[s.c]+'">'+s.r+'</span>',{permanent:true,direction:'top',offset:[0,-9],className:'lbl',opacity:1});
+  m.on('click',function(e){L.DomEvent.stopPropagation(e);show(s.f,s.r);});});
+FIND.forEach(function(f){if(!f.xy)return;
+  var m=L.circleMarker(ll(f.xy[0],f.xy[1]),{radius:9,color:'#1F3864',weight:3,fillColor:'#fff',fillOpacity:.3}).addTo(map)
+   .bindTooltip('<span class="tag" style="border-color:#1F3864;color:#1F3864">Finding '+f.n+'</span>',{permanent:true,direction:'top',offset:[0,-8],className:'lbl',opacity:1});
+  m.on('click',function(e){L.DomEvent.stopPropagation(e);show(f.n);});});
+var stab=document.getElementById('stab');
+SPOTS.forEach(function(s){var tr=document.createElement('tr');tr.className='click';
+  tr.innerHTML='<td><b>'+s.r+'</b></td><td>'+s.loc+'</td><td>'+s.d+'</td><td><span class="status '+ST[s.c][0]+'">'+s.cl+'</span></td>';
+  tr.onclick=function(){show(s.f,s.r);};stab.appendChild(tr);});
+var items=document.getElementById('items');
+FIND.forEach(function(f){var d=document.createElement('div');d.className='item';
+  var onmap=f.xy||f.spot;
+  d.innerHTML='<div class="num'+(onmap?'':' off')+'">'+f.n+'</div><div><b>'+f.t+'</b><span>'+f.s+'</span><br><span class="status '+ST[f.st][0]+'">'+ST[f.st][1]+'</span></div>';
+  d.onclick=function(){show(f.n);};items.appendChild(d);});
+function spot(r){return SPOTS.filter(function(s){return s.r===r})[0];}
+function show(n,r){var f=FIND.filter(function(x){return x.n==n})[0],el=document.getElementById('detail');
+  var target=f.xy?f.xy:(r?spot(r).xy:(f.spot?spot(f.spot).xy:null));
+  var where=f.xy?'Marked on the map':(f.spot?(f.n===1?'Marked on the map as S1':'Marked on the map as S2–S6'):'Location: '+f.loc+' (not marked on the map)');
+  var extra='';
+  if(f.n===2){extra='<table class="st"><tr><th>Ref.</th><th>Location</th><th>Colder</th><th>Confidence</th></tr>'+SPOTS.filter(function(s){return s.f===2}).map(function(s){return '<tr class="click" data-r="'+s.r+'"><td><b>'+s.r+'</b></td><td>'+s.loc+'</td><td>'+s.d+'</td><td>'+s.cl+'</td></tr>'}).join('')+'</table>';}
+  var pics=f.imgs.map(function(i){return '<figure class="'+(i[2]||'')+'"><img src="img/'+i[0]+'" alt="'+i[1]+'" data-cap="'+i[1]+'"><figcaption>'+i[1]+'</figcaption></figure>'}).join('');
+  el.innerHTML='<span class="back">&larr; All findings</span><h3>Finding '+f.n+' – '+f.t+'</h3>'
+   +'<div class="loc">'+where+' · <span class="status '+ST[f.st][0]+'">'+ST[f.st][1]+'</span></div>'+extra
+   +'<div class="pics">'+pics+'</div><ul>'+f.b.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul><div class="mean"><b>What this means:</b> '+f.m+'</div>';
+  document.getElementById('list').style.display='none';el.style.display='block';document.getElementById('side').scrollTop=0;
+  el.querySelector('.back').onclick=function(){el.style.display='none';document.getElementById('list').style.display='block';};
+  el.querySelectorAll('img').forEach(function(im){im.onclick=function(){openLB(im.src,im.dataset.cap)}});
+  el.querySelectorAll('tr[data-r]').forEach(function(tr){tr.onclick=function(){var s=spot(tr.dataset.r);map.flyTo(ll(s.xy[0],s.xy[1]),0.5,{duration:.6});}});
+  if(target)map.flyTo(ll(target[0],target[1]),f.n<=2?0.25:-0.5,{duration:.6});}
+var lb=document.getElementById('lightbox');
+function openLB(src,cap){lb.querySelector('img').src=src;lb.querySelector('div').textContent=cap;lb.style.display='flex';}
+lb.onclick=function(){lb.style.display='none'};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')lb.style.display='none'});
+document.getElementById('moreBtn').onclick=function(){var a=document.getElementById('about');a.style.display=a.style.display==='block'?'none':'block';};
+var bin=atob(TEMPS.data),TT=new Uint16Array(bin.length/2);
+for(var i=0;i<TT.length;i++)TT[i]=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);
+function tempAt(x,y){var c=Math.floor(x/TEMPS.k),r=Math.floor(y/TEMPS.k);
+  if(c<0||r<0||c>=TEMPS.w||r>=TEMPS.h)return null;var v=TT[r*TEMPS.w+c];return v?v/100-50:null;}
+var prev=null;
+map.on('click',function(e){var t=tempAt(e.latlng.lng,H-e.latlng.lat),txt;
+  if(t===null)txt='Outside the survey area';
+  else{txt='<b>'+t.toFixed(1)+' °C</b>';if(prev!==null){var d=t-prev;txt+='<br>'+(d>=0?'+':'')+d.toFixed(1)+' °C vs previous point';}prev=t;}
+  L.popup().setLatLng(e.latlng).setContent('<div class="tp">'+txt+'</div>').openOn(map);});
+function scale(){var mpp=PX/Math.pow(2,map.getZoom()),opts=[1,2,5,10,20,50],best=1;
+  opts.forEach(function(o){if(o/mpp<=140)best=o});document.getElementById('sl').textContent=best+' m';
+  document.getElementById('sbar').style.width=Math.round(best/mpp)+'px';}
+map.on('zoomend',scale);scale();
+var mode='swipe',ratio=0.5,sw=document.getElementById('swipe');
+function clip(){var pane=map.getPane('thermalPane');
+  if(mode!=='swipe'){pane.style.clip='';sw.style.display='none';return;}
+  var size=map.getSize(),nw=map.containerPointToLayerPoint([0,0]),se=map.containerPointToLayerPoint(size),cx=nw.x+(se.x-nw.x)*ratio;
+  pane.style.clip='rect('+nw.y+'px,'+se.x+'px,'+se.y+'px,'+cx+'px)';sw.style.display='block';sw.style.left=(size.x*ratio-2)+'px';}
+function setMode(m){mode=m;document.querySelectorAll('.modes button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m)});
+  map.getPane('thermalPane').style.display=(m==='rgb')?'none':'';clip();}
+document.querySelectorAll('.modes button').forEach(function(b){b.onclick=function(){setMode(b.dataset.m)}});
+map.on('move zoom resize',clip);
+var drag=false;
+function mv(ev){if(!drag)return;var p=ev.touches?ev.touches[0]:ev,rc=map.getContainer().getBoundingClientRect();
+  ratio=Math.min(0.98,Math.max(0.02,(p.clientX-rc.left)/rc.width));clip();ev.preventDefault();}
+sw.addEventListener('mousedown',function(e){drag=true;map.dragging.disable();e.stopPropagation();});
+sw.addEventListener('touchstart',function(e){drag=true;map.dragging.disable();e.stopPropagation();},{passive:true});
+window.addEventListener('mousemove',mv);window.addEventListener('touchmove',mv,{passive:false});
+function up(){if(drag){drag=false;map.dragging.enable();}}
+window.addEventListener('mouseup',up);window.addEventListener('touchend',up);
+['swipe','legend','north','scale'].forEach(function(id){L.DomEvent.disableClickPropagation(document.getElementById(id));});
+setMode('swipe');
+</script>
+</body>
+</html>
